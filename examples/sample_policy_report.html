@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Policy Rules Report</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            opacity: 0.9;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .summary-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2d5a87;
+        }
+
+        .summary-card .label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .policy {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .policy-name {
+            color: #1e3a5f;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .policy-source {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .rule {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2d5a87;
+        }
+
+        .rule-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .rule-number {
+            background: #2d5a87;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+        }
+
+        .rule-name {
+            color: #1e3a5f;
+            flex: 1;
+        }
+
+        .rule-type {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .mutual-exclusion {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .overutilization {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .service-not-covered {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .rule-description {
+            margin-bottom: 15px;
+        }
+
+        .rule-description p {
+            margin-top: 5px;
+            color: #555;
+        }
+
+        .rule-quote {
+            background: #fff;
+            border-left: 3px solid #2d5a87;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            font-style: italic;
+            color: #555;
+        }
+
+        .rule-confidence {
+            margin-bottom: 15px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .confidence-high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .confidence-medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .confidence-low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .rule-sql {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+
+        .rule-sql strong {
+            color: #9cdcfe;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .rule-sql pre {
+            margin: 0;
+        }
+
+        .rule-sql code {
+            color: #ce9178;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .schema-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .schema-section h2 {
+            color: #1e3a5f;
+            margin-bottom: 15px;
+        }
+
+        .schema-section pre {
+            background: #1e1e1e;
+            color: #dcdcaa;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85em;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .toc {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .toc h2 {
+            color: #1e3a5f;
+            margin-bottom: 15px;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .toc a {
+            color: #2d5a87;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        .industry-ref {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .industry-ref strong {
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Healthcare Policy Rules Report</h1>
+            <p>Extracted billing rules with SQL implementations for claims validation</p>
+            <p>Generated by Policy Extraction Agent</p>
+        </header>
+
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="number">3</div>
+                <div class="label">Policies Analyzed</div>
+            </div>
+            <div class="summary-card">
+                <div class="number">9</div>
+                <div class="label">Rules Extracted</div>
+            </div>
+            <div class="summary-card">
+                <div class="number">7</div>
+                <div class="label">High Confidence</div>
+            </div>
+            <div class="summary-card">
+                <div class="number">2</div>
+                <div class="label">Medium Confidence</div>
+            </div>
+        </div>
+
+        <div class="toc">
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#bilateral">1. Bilateral Procedures Policy</a></li>
+                <li><a href="#global">2. Global Days Policy</a></li>
+                <li><a href="#obstetrical">3. Obstetrical Policy</a></li>
+            </ul>
+        </div>
+
+        <div class="schema-section">
+            <h2>Database Schema Reference</h2>
+            <pre>
+-- Claims table
+CREATE TABLE claims (
+    claim_id VARCHAR(50) PRIMARY KEY,
+    claim_number VARCHAR(50),
+    patient_id VARCHAR(50),
+    provider_npi VARCHAR(10),
+    provider_tin VARCHAR(15),
+    submission_date DATE
+);
+
+-- Patients table
+CREATE TABLE patients (
+    patient_id VARCHAR(50) PRIMARY KEY,
+    dob DATE,
+    gender CHAR(1)  -- 'M', 'F'
+);
+
+-- Claim lines table
+CREATE TABLE claim_lines (
+    line_id VARCHAR(50) PRIMARY KEY,
+    claim_id VARCHAR(50) REFERENCES claims(claim_id),
+    line_number INT,
+    cpt_code VARCHAR(10),
+    modifier1 VARCHAR(5),
+    modifier2 VARCHAR(5),
+    modifier3 VARCHAR(5),
+    modifier4 VARCHAR(5),
+    icd_code VARCHAR(10),
+    place_of_service VARCHAR(2),
+    date_of_service DATE,
+    units INT,
+    amount_billed DECIMAL(10,2)
+);
+            </pre>
+        </div>
+
+        <!-- POLICY 1: Bilateral Procedures -->
+        <div class="policy" id="bilateral">
+            <h2 class="policy-name">UHC Commercial Bilateral Procedures Policy</h2>
+            <p class="policy-source">Source: COMM-Bilateral-Procedures-Policy.pdf</p>
+            <div class="rules-list">
+
+                <div class="rule">
+                    <div class="rule-header">
+                        <span class="rule-number">Rule 1</span>
+                        <h3 class="rule-name">Bilateral Procedure Modifier Requirement</h3>
+                        <span class="rule-type mutual-exclusion">Mutual Exclusion</span>
+                    </div>
+
+                    <div class="rule-description">
+                        <strong>Description:</strong>
+                        <p>When a bilateral-eligible procedure is performed on both sides of the body, it must be billed on a single line with modifier 50. Submitting two separate lines for the same bilateral procedure is incorrect billing and may result in overbilling (200% instead of 150% reimbursement).</p>
+                    </div>
+
+                    <div class="rule-quote">
+                        <strong>Source Quote:</strong> "Modifier 50 indicates that a procedure has been rendered bilaterally"
+                    </div>
+
+                    <div class="rule-confidence confidence-high">
+                        <strong>Confidence:</strong> High
+                    </div>
+
+                    <div class="industry-ref">
+                        <strong>Industry Validation:</strong> Aligns with CMS NCCI Policy Manual Chapter 4 - bilateral surgery guidelines. Standard practice across Medicare and commercial payers.
+                    </div>
+
+                    <div class="rule-sql">
+                        <strong>SQL Implementation:</strong>
+                        <pre><code>-- Detect bilateral procedures billed as separate lines instead of modifier 50
+SELECT
+    c.claim_number,
+    c.provider_npi,
+    c.patient_id,
+    cl.cpt_code,
+    cl.date_of_service,
+    COUNT(*) as line_count,
+    'Bilateral procedure billed on multiple lines without modifier 50' as violation
+FROM claim_lines cl
+JOIN claims c ON cl.claim_id = c.claim_id
+WHERE cl.cpt_code IN (
+    -- Bilateral-eligible procedures (sample list)
+    '29806', '29807', '29820', '29821', '29822', '29823',  -- Shoulder arthroscopy
+    '27447', '27486', '27487',  -- Knee procedures
+    '69436', '69801'  -- Ear procedures
+)
+AND (cl.modifier1 IS NULL OR cl.modifier1 != '50')
+AND (cl.modifier2 IS NULL OR cl.modifier2 != '50')
+GROUP BY c.claim_number, c.provider_npi, c.patient_id, cl.cpt_code, cl.date_of_service
+HAVING COUNT(*) > 1;</code></pre>
+                    </div>
+                </div>
+
+                <div class="rule">
+                    <div class="rule-header">
+                        <span class="rule-number">Rule 2</span>
+                        <h3 class="rule-name">Bilateral Modifier on Non-Eligible Procedures</h3>
+                        <span class="rule-type service-not-covered">Service Not Covered</span>
+                    </div>
+
+                    <div class="rule-description">
+                        <strong>Description:</strong>
+                        <p>Modifier 50 can only be applied to procedures that are anatomically bilateral-eligible. Using modifier 50 on procedures that cannot be performed bilaterally (e.g., single organ procedures) is incorrect billing.</p>
+                    </div>
+
+                    <div class="rule-confidence confidence-high">
+                        <strong>Confidence:</strong> High
+                    </div>
+
+                    <div class="rule-sql">
+                        <strong>SQL Implementation:</strong>
+                        <pre><code>-- Detect modifier 50 on non-bilateral-eligible procedures
+SELECT
+    c.claim_number,
+    c.provider_npi,
+    cl.cpt_code,
+    cl.modifier1,
+    'Modifier 50 used on non-bilateral-eligible procedure' as violation
+FROM claim_lines cl
+JOIN claims c ON cl.claim_id = c.claim_id
+WHERE (cl.modifier1 = '50' OR cl.modifier2 = '50')
+AND cl.cpt_code NOT IN (
+    SELECT cpt_code FROM bilateral_eligible_codes  -- Reference table
+);</code></pre>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- POLICY 2: Global Days -->
+        <div class="policy" id="global">
+            <h2 class="policy-name">UHC Commercial Global Days Policy</h2>
+            <p class="policy-source">Source: COMM-Global-Days-Policy.pdf</p>
+            <div class="rules-list">
+
+                <div class="rule">
+                    <div class="rule-header">
+                        <span class="rule-number">Rule 3</span>
+                        <h3 class="rule-name">E/M Within 90-Day Global Period</h3>
+                        <span class="rule-type mutual-exclusion">Mutual Exclusion</span>
+                    </div>
+
+                    <div class="rule-description">
+                        <strong>Description:</strong>
+                        <p>E/M services provided within the 90-day global period of a major surgery are included in the surgical fee and cannot be billed separately unless modifier 24 (unrelated E/M), 78 (unplanned return to OR), or 79 (unrelated procedure) is used with appropriate documentation.</p>
+                    </div>
+
+                    <div class="rule-quote">
+                        <strong>Source Quote:</strong> "All post-operative visits related to the surgery during the global period are bundled"
+                    </div>
+
+                    <div class="rule-confidence confidence-high">
+                        <strong>Confidence:</strong> High
+                    </div>
+
+                    <div class="industry-ref">
+                        <strong>Industry Validation:</strong> Matches CMS Global Surgery Policy (Medicare Claims Processing Manual, Ch. 12, Sec. 40). Industry-standard 90-day global period for major surgeries.
+                    </div>
+
+                    <div class="rule-sql">
+                        <strong>SQL Implementation:</strong>
+                        <pre><code>-- Detect E/M services within global period without valid modifier
+WITH surgical_procedures AS (
+    SELECT
+        c.claim_id,
+        c.patient_id,
+        c.provider_npi,
+        cl.cpt_code as surgery_code,
+        cl.date_of_service as surgery_date,
+        90 as global_days  -- Major surgery
+    FROM claim_lines cl
+    JOIN claims c ON cl.claim_id = c.claim_id
+    WHERE cl.cpt_code IN (
+        -- Major surgeries with 90-day global (sample)
+        '27447', '27486', '54910', '33533', '47562'
+    )
+)
+SELECT
+    c.claim_number,
+    sp.surgery_code,
+    sp.surgery_date,
+    cl.cpt_code as em_code,
+    cl.date_of_service as em_date,
+    cl.modifier1,
+    'E/M within global period without modifier 24/78/79' as violation
+FROM claim_lines cl
+JOIN claims c ON cl.claim_id = c.claim_id
+JOIN surgical_procedures sp ON c.patient_id = sp.patient_id
+    AND c.provider_npi = sp.provider_npi
+WHERE cl.cpt_code BETWEEN '99201' AND '99499'  -- E/M codes
+AND cl.date_of_service BETWEEN sp.surgery_date AND sp.surgery_date + sp.global_days
+AND cl.date_of_service != sp.surgery_date
+AND (cl.modifier1 IS NULL OR cl.modifier1 NOT IN ('24', '78', '79'))
+AND (cl.modifier2 IS NULL OR cl.modifier2 NOT IN ('24', '78', '79'));</code></pre>
+                    </div>
+                </div>
+
+                <div class="rule">
+                    <div class="rule-header">
+                        <span class="rule-number">Rule 4</span>
+                        <h3 class="rule-name">Unrelated E/M Requires Injury Diagnosis</h3>
+                        <span class="rule-type service-not-covered">Service Not Covered</span>
+                    </div>
+
+                    <div class="rule-description">
+                        <strong>Description:</strong>
+                        <p>When modifier 24 is used for an E/M during the global period, the diagnosis code should support that the visit is truly unrelated to the surgery. Injury codes (ICD-10 starting with S or T) may justify separate billing for acute injuries.</p>
+                    </div>
+
+                    <div class="rule-confidence confidence-medium">
+                        <strong>Confidence:</strong> Medium
+                    </div>
+
+                    <div class="rule-sql">
+                        <strong>SQL Implementation:</strong>
+                        <pre><code>-- Validate modifier 24 usage has unrelated diagnosis
+WITH surgical_claims AS (
+    SELECT
+        c.patient_id,
+        c.provider_npi,
+        cl.icd_code as surgery_diagnosis,
+        cl.date_of_service as surgery_date
+    FROM claim_lines cl
+    JOIN claims c ON cl.claim_id = c.claim_id
+    WHERE cl.cpt_code IN (SELECT cpt_code FROM major_surgery_codes)
+)
+SELECT
+    c.claim_number,
+    cl.cpt_code,
+    cl.icd_code as em_diagnosis,
+    sc.surgery_diagnosis,
+    'Modifier 24 used but diagnosis may be related to surgery' as warning
+FROM claim_lines cl
+JOIN claims c ON cl.claim_id = c.claim_id
+JOIN surgical_claims sc ON c.patient_id = sc.patient_id
+WHERE cl.modifier1 = '24'
+AND cl.date_of_service BETWEEN sc.surgery_date AND sc.surgery_date + 90
+AND LEFT(cl.icd_code, 3) = LEFT(sc.surgery_diagnosis, 3)  -- Same diagnosis family
+AND cl.icd_code NOT LIKE 'S%'  -- Not injury
+AND cl.icd_code NOT LIKE 'T%';  -- Not injury</code></pre>
+                    </div>
+                </div>
+
+                <div class="rule">
+                    <div class="rule-header">
+                        <span class="rule-number">Rule 5</span>
+                        <h3 class="rule-name">Emergency Department POS Requirement</h3>
+                        <span class="rule-type service-not-covered">Service Not Covered</span>
+                    </div>
+
+                    <div class="rule-description">
+                        <strong>Description:</strong>
+                        <p>Emergency Department E/M codes (99281-99285) must be billed with Place of Service code 23 (Emergency Room - Hospital). Using ED codes with non-ED place of service is incorrect billing.</p>
+                    </div>
+
+                    <div class="rule-confidence confidence-high">
+                        <strong>Confidence:</strong> High
+                    </div>
+
+                    <div class="rule-sql">
+                        <strong>SQL Implementation:</strong>
+                        <pre><code>-- Detect ED codes without correct place of service
+SELECT
+    c.claim_number,
+    c.provider_npi,
+    cl.cpt_code,
+    cl.place_of_service,
+    'ED E/M code requires POS 23 (Emergency Room)' as violation
+FROM claim_lines cl
+JOIN claims c ON cl.claim_id = c.claim_id
+WHERE cl.cpt_code IN ('99281', '99282', '99283', '99284', '99285')
+AND cl.place_of_service != '23';</code></pre>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- POLICY 3: Obstetrical -->
+        <div class="policy" id="obstetrical">
+            <h2 class="policy-name">UHC Commercial Obstetrical Policy</h2>
+            <p class="policy-source">Source: COMM-Obstetrical-Policy.pdf</p>
+            <div class="rules-list">
+
+                <div class="rule">
+                    <div class="rule-header">
+                        <span class="rule-number">Rule 6</span>
+                        <h3 class="rule-name">OB Global Package E/M Bundling</h3>
+                        <span class="rule-type mutual-exclusion">Mutual Exclusion</span>
+                    </div>
+
+                    <div class="rule-description">
+                        <strong>Description:</strong>
+                        <p>Global obstetrical codes (59400, 59510, etc.) include antepartum care, delivery, and postpartum care. Separate E/M visits related to pregnancy cannot be billed in addition to global OB codes unless they are truly unrelated and documented with modifier 25.</p>
+                    </div>
+
+                    <div class="rule-confidence confidence-high">
+                        <strong>Confidence:</strong> High
+                    </div>
+
+                    <div class="industry-ref">
+                        <strong>Industry Validation:</strong> Aligns with ACOG (American College of Obstetricians and Gynecologists) coding guidelines and CMS global OB package policies.
+                    </div>
+
+                    <div class="rule-sql">
+                        <strong>SQL Implementation:</strong>
+                        <pre><code>-- Detect E/M services billed with global OB package
+SELECT
+    c.claim_number,
+    c.patient_id,
+    ob.cpt_code as ob_code,
+    em.cpt_code as em_code,
+    em.date_of_service as em_date,
+    em.modifier1,
+    'E/M may be bundled in global OB package' as violation
+FROM claim_lines ob
+JOIN claims c ON ob.claim_id = c.claim_id
+JOIN claim_lines em ON c.claim_id = em.claim_id AND ob.line_id != em.line_id
+WHERE ob.cpt_code IN (
+    '59400',  -- Routine OB care (vaginal)
+    '59510',  -- Routine OB care (cesarean)
+    '59610',  -- Routine OB care VBAC
+    '59618'   -- Routine OB care cesarean after VBAC attempt
+)
+AND em.cpt_code BETWEEN '99201' AND '99499'
+AND (em.modifier1 IS NULL OR em.modifier1 != '25')
+AND (em.modifier2 IS NULL OR em.modifier2 != '25');</code></pre>
+                    </div>
+                </div>
+
+                <div class="rule">
+                    <div class="rule-header">
+                        <span class="rule-number">Rule 7</span>
+                        <h3 class="rule-name">Gender-Specific OB Services</h3>
+                        <span class="rule-type service-not-covered">Service Not Covered</span>
+                    </div>
+
+                    <div class="rule-description">
+                        <strong>Description:</strong>
+                        <p>Obstetrical and pregnancy-related services can only be provided to patients with female gender. Claims for OB services on male patients should be denied.</p>
+                    </div>
+
+                    <div class="rule-confidence confidence-high">
+                        <strong>Confidence:</strong> High
+                    </div>
+
+                    <div class="rule-sql">
+                        <strong>SQL Implementation:</strong>
+                        <pre><code>-- Detect OB services billed for non-female patients
+SELECT
+    c.claim_number,
+    c.patient_id,
+    p.gender,
+    cl.cpt_code,
+    'OB service cannot be provided to non-female patient' as violation
+FROM claim_lines cl
+JOIN claims c ON cl.claim_id = c.claim_id
+JOIN patients p ON c.patient_id = p.patient_id
+WHERE cl.cpt_code BETWEEN '59000' AND '59899'  -- OB code range
+AND p.gender != 'F';</code></pre>
+                    </div>
+                </div>
+
+                <div class="rule">
+                    <div class="rule-header">
+                        <span class="rule-number">Rule 8</span>
+                        <h3 class="rule-name">Preventive E/M with Problem-Based E/M</h3>
+                        <span class="rule-type mutual-exclusion">Mutual Exclusion</span>
+                    </div>
+
+                    <div class="rule-description">
+                        <strong>Description:</strong>
+                        <p>When both preventive medicine E/M (99381-99397) and problem-based E/M (99201-99215) are billed on the same date of service by the same provider, modifier 25 must be present on the problem-based E/M to indicate it is a significant, separately identifiable service.</p>
+                    </div>
+
+                    <div class="rule-confidence confidence-high">
+                        <strong>Confidence:</strong> High
+                    </div>
+
+                    <div class="rule-sql">
+                        <strong>SQL Implementation:</strong>
+                        <pre><code>-- Detect preventive + problem E/M without modifier 25
+SELECT
+    c.claim_number,
+    c.provider_tin,
+    prev.cpt_code as preventive_code,
+    prob.cpt_code as problem_code,
+    prev.date_of_service,
+    'Problem E/M requires modifier 25 when billed with preventive E/M' as violation
+FROM claim_lines prev
+JOIN claims c ON prev.claim_id = c.claim_id
+JOIN claim_lines prob ON c.claim_id = prob.claim_id
+    AND prev.line_id != prob.line_id
+    AND prev.date_of_service = prob.date_of_service
+WHERE prev.cpt_code IN (
+    '99381', '99382', '99383', '99384', '99385', '99386', '99387',  -- New patient preventive
+    '99391', '99392', '99393', '99394', '99395', '99396', '99397'   -- Established patient preventive
+)
+AND prob.cpt_code IN (
+    '99201', '99202', '99203', '99204', '99205',  -- New patient office
+    '99211', '99212', '99213', '99214', '99215'   -- Established patient office
+)
+AND (prob.modifier1 IS NULL OR prob.modifier1 != '25')
+AND (prob.modifier2 IS NULL OR prob.modifier2 != '25');</code></pre>
+                    </div>
+                </div>
+
+                <div class="rule">
+                    <div class="rule-header">
+                        <span class="rule-number">Rule 9</span>
+                        <h3 class="rule-name">Duplicate X-Ray Views Same Day</h3>
+                        <span class="rule-type overutilization">Overutilization</span>
+                    </div>
+
+                    <div class="rule-description">
+                        <strong>Description:</strong>
+                        <p>When multiple X-ray views of the same anatomical area are performed on the same date, only the code with the higher number of views should be reimbursed. Lower view codes are bundled into higher view codes.</p>
+                    </div>
+
+                    <div class="rule-confidence confidence-high">
+                        <strong>Confidence:</strong> High
+                    </div>
+
+                    <div class="rule-sql">
+                        <strong>SQL Implementation:</strong>
+                        <pre><code>-- Detect duplicate X-ray views (lower view should be bundled)
+WITH xray_hierarchy AS (
+    SELECT '71045' as cpt_code, 'Chest' as body_part, 1 as views UNION ALL
+    SELECT '71046', 'Chest', 2 UNION ALL
+    SELECT '71047', 'Chest', 3 UNION ALL
+    SELECT '71048', 'Chest', 4 UNION ALL
+    SELECT '73030', 'Shoulder', 2 UNION ALL
+    SELECT '73020', 'Shoulder', 1
+)
+SELECT
+    c.claim_number,
+    c.patient_id,
+    cl1.cpt_code as higher_view_code,
+    cl2.cpt_code as lower_view_code,
+    xh1.body_part,
+    'Lower view X-ray bundled into higher view code' as violation
+FROM claim_lines cl1
+JOIN claims c ON cl1.claim_id = c.claim_id
+JOIN claim_lines cl2 ON c.claim_id = cl2.claim_id
+    AND cl1.line_id != cl2.line_id
+    AND cl1.date_of_service = cl2.date_of_service
+JOIN xray_hierarchy xh1 ON cl1.cpt_code = xh1.cpt_code
+JOIN xray_hierarchy xh2 ON cl2.cpt_code = xh2.cpt_code
+WHERE xh1.body_part = xh2.body_part
+AND xh1.views > xh2.views;</code></pre>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <footer>
+            <p>AI Engineer Home Task - Policy Rule Extraction Agent</p>
+            <p>Generated from UHC Commercial Reimbursement Policies</p>
+        </footer>
+    </div>
+</body>
+</html>
