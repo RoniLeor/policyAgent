@@ -10,11 +10,6 @@ from policyagent.core.models import ExtractedRule, ScoredRule, SearchSource, SQL
 from policyagent.core.types import RuleClassification
 
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator
-    from contextlib import contextmanager
-
-
 def row_to_scored_rule(
     row: sqlite3.Row, get_connection: Any
 ) -> ScoredRule:

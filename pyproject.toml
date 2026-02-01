@@ -242,3 +242,10 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+# ============================================================================
+# BANDIT Configuration (Security)
+# ============================================================================
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv"]
+skips = ["B101"]  # Skip assert warnings

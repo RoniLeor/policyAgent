@@ -67,9 +67,6 @@ class OCRTool(Tool):
 
         self.use_gpu = settings.ocr.use_gpu
         self._ocr: Any = None
-        self._models_dir = Path(__file__).parent.parent.parent.parent.parent / "models"
-        self._det_model = settings.ocr.det_model
-        self._rec_model = settings.ocr.rec_model
 
     def _get_ocr(self) -> Any:
         """Lazy initialization of RapidOCR engine."""

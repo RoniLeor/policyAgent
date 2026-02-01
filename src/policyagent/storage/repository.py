@@ -69,50 +69,6 @@ class RuleRepository:
     def save_rules(self, vendor: str, rules: list[ScoredRule]) -> list[str]:
         return [self.save_rule(vendor, r) for r in rules]
 
-    def find_by_cpt_code(self, cpt_code: str) -> list[ScoredRule]:
-        with self._connection() as conn:
-            rows = conn.execute(
-                """SELECT DISTINCT r.* FROM rules r
-                JOIN rule_cpt_codes c ON r.id = c.rule_id
-                WHERE c.cpt_code = ? ORDER BY r.confidence DESC""", (cpt_code,)
-            ).fetchall()
-        return [row_to_scored_rule(r, self._connection) for r in rows]
-
-    def find_by_cpt_codes(self, cpt_codes: list[str]) -> list[ScoredRule]:
-        if not cpt_codes:
-            return []
-        ph = ",".join("?" * len(cpt_codes))
-        with self._connection() as conn:
-            rows = conn.execute(
-                f"""SELECT DISTINCT r.* FROM rules r
-                JOIN rule_cpt_codes c ON r.id = c.rule_id
-                WHERE c.cpt_code IN ({ph}) ORDER BY r.confidence DESC""", cpt_codes
-            ).fetchall()
-        return [row_to_scored_rule(r, self._connection) for r in rows]
-
-    def find_by_classification(self, classification: RuleClassification) -> list[ScoredRule]:
-        with self._connection() as conn:
-            rows = conn.execute(
-                "SELECT * FROM rules WHERE classification = ? ORDER BY confidence DESC",
-                (classification.value,)
-            ).fetchall()
-        return [row_to_scored_rule(r, self._connection) for r in rows]
-
-    def find_by_vendor(self, vendor: str) -> list[ScoredRule]:
-        with self._connection() as conn:
-            rows = conn.execute(
-                "SELECT * FROM rules WHERE vendor = ? ORDER BY id", (vendor,)
-            ).fetchall()
-        return [row_to_scored_rule(r, self._connection) for r in rows]
-
-    def search_text(self, query: str, limit: int = 20) -> list[ScoredRule]:
-        with self._connection() as conn:
-            rows = conn.execute(
-                """SELECT r.* FROM rules r JOIN rules_fts fts ON r.id = fts.id
-                WHERE rules_fts MATCH ? ORDER BY rank LIMIT ?""", (query, limit)
-            ).fetchall()
-        return [row_to_scored_rule(r, self._connection) for r in rows]
-
     def search(
         self, cpt_codes: list[str] | None = None, icd10_codes: list[str] | None = None,
         classification: RuleClassification | None = None, vendor: str | None = None,
@@ -142,11 +98,6 @@ class RuleRepository:
             rows = conn.execute(query, params).fetchall()
         return [row_to_scored_rule(r, self._connection) for r in rows]
 
-    def get_all_vendors(self) -> list[str]:
-        with self._connection() as conn:
-            rows = conn.execute("SELECT DISTINCT vendor FROM rules ORDER BY vendor").fetchall()
-        return [r["vendor"] for r in rows]
-
     def get_stats(self) -> dict[str, Any]:
         with self._connection() as conn:
             total = conn.execute("SELECT COUNT(*) as cnt FROM rules").fetchone()["cnt"]
@@ -163,8 +114,3 @@ class RuleRepository:
             "by_vendor": {r["vendor"]: r["cnt"] for r in by_vendor},
             "average_confidence": round(avg_conf or 0, 1),
         }
-
-    def delete_vendor(self, vendor: str) -> int:
-        with self._connection() as conn:
-            result = conn.execute("DELETE FROM rules WHERE vendor = ?", (vendor,))
-            return result.rowcount

@@ -73,12 +73,6 @@ class SQLTool(Tool):
             logger.exception("SQL validation failed")
             return ToolResult(tool_name=self.name, success=False, error=f"SQL validation failed: {e}")
 
-    def execute_query(self, sql: str) -> dict[str, Any]:
-        """Execute SQL query against claims database."""
-        if not self._claims_db:
-            return {"success": False, "error": "No claims database configured", "rows": [], "count": 0}
-        return self._claims_db.execute_query(sql)
-
     def _validate_sql(self, sql: str) -> dict[str, Any]:
         """Validate SQL query syntax and schema references."""
         result: dict[str, Any] = {"is_valid": False, "sql": sql, "tables_used": [], "columns_used": [], "warnings": [], "error": None}
