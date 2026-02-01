@@ -139,11 +139,43 @@ cython_debug/
 # Project specific
 models/*.onnx
 models/*.yml
-reports/
-docs/
+models/*.ckpt
+models/*.pt
+models/*.pth
+models/*.bin
+!models/.gitkeep
+
+# Reports output (generated)
+reports/*.html
+reports/*.pdf
+reports/*.json
+!reports/.gitkeep
+
+# Database files
 *.db
+*.sqlite
+*.sqlite3
+rules.db
+
+# Generated HTML (except templates)
 *.html
 !src/policyagent/templates/*.html
+!examples/*.html
+
+# API Keys / Secrets
+.env.local
+.env.*.local
+secrets.json
+credentials.json
+
+# Policy PDFs (user data)
+policies/*.pdf
+input/*.pdf
+!examples/*.pdf
+
+# Logs
+logs/
+*.log
 
 # OS
 .DS_Store

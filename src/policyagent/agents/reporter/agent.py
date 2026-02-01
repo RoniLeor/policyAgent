@@ -129,6 +129,9 @@ class ReporterAgent(Agent):
         """
         logger.info("Generating report for: %s", policy_name)
 
+        # Calculate total violations
+        total_violations = sum(r.query_result.violation_count for r in rules)
+
         # Create report model
         report = PolicyReport(
             policy_name=policy_name,
@@ -137,6 +140,7 @@ class ReporterAgent(Agent):
             rules=rules,
             total_pages=total_pages,
             processing_time_seconds=processing_time,
+            total_violations=total_violations,
         )
 
         # Generate HTML

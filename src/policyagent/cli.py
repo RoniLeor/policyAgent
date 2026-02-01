@@ -13,9 +13,9 @@ from policyagent.config.settings import Settings
 from policyagent.console.logger import PipelineConsole
 from policyagent.core.types import RuleClassification
 from policyagent.orchestrator.pipeline import Pipeline
+from policyagent.storage.claims_db import ClaimsDatabase
 from policyagent.storage.repository import RuleRepository
 from policyagent.tools.html import create_default_template
-
 
 if TYPE_CHECKING:
     from policyagent.core.models import ScoredRule
@@ -26,6 +26,7 @@ console = PipelineConsole()
 async def run_pipeline(  # noqa: PLR0915
     pdf_path: str, output_path: str, policy_name: str | None = None,
     save_to_db: bool = True, db_path: str = "rules.db", mock: bool = False,
+    claims_db_path: str | None = None,
 ) -> None:
     """Run the policy processing pipeline."""
     settings = Settings()
@@ -37,7 +38,15 @@ async def run_pipeline(  # noqa: PLR0915
     if mock:
         console.console.print("[yellow]Running in MOCK mode (no API calls)[/yellow]\n")
     create_default_template()
-    pipeline = Pipeline(settings, mock=mock)
+
+    # Setup claims database if provided
+    claims_db = None
+    if claims_db_path:
+        claims_db = ClaimsDatabase(claims_db_path)
+        stats = claims_db.get_stats()
+        console.console.print(f"[cyan]Claims DB:[/cyan] {stats['claims']} claims, {stats['claim_lines']} lines\n")
+
+    pipeline = Pipeline(settings, mock=mock, claims_db=claims_db)
 
     with console.pipeline_progress() as progress:
         console.print_stage_start(1, "Parsing PDF", "📄")
@@ -74,7 +83,14 @@ async def run_pipeline(  # noqa: PLR0915
         avg_conf = sum(r.confidence for r in scored_rules) / len(scored_rules) if scored_rules else 0
         console.print_stage_complete(4, "Scored", f"avg: {avg_conf:.0f}%")
 
-        console.print_stage_start(5, "Generating report", "📊")
+        # Execute queries if claims database is available
+        if claims_db:
+            console.print_stage_start(5, "Executing queries", "🔎")
+            scored_rules = pipeline.execute_queries(scored_rules)
+            total_violations = sum(r.query_result.violation_count for r in scored_rules)
+            console.print_stage_complete(5, "Queries executed", f"{total_violations} violations found")
+
+        console.print_stage_start(6 if claims_db else 5, "Generating report", "📊")
         task5 = console.create_stage_task(progress, "Creating HTML...", total=None)
         report = await pipeline._reporter.generate_report(
             policy_name=policy_name, source_path=str(pdf_path_obj.absolute()),
@@ -82,7 +98,7 @@ async def run_pipeline(  # noqa: PLR0915
             total_pages=document.page_count, processing_time=time.time(),
         )
         progress.update(task5, completed=True)
-        console.print_stage_complete(5, "Report generated")
+        console.print_stage_complete(6 if claims_db else 5, "Report generated")
 
     if save_to_db and scored_rules:
         repo = RuleRepository(db_path)
@@ -115,6 +131,16 @@ async def show_stats(db_path: str = "rules.db") -> None:
     console.print_db_stats(repo.get_stats())
 
 
+async def init_claims_db(db_path: str = "claims.db", load_sample: bool = True) -> None:
+    """Initialize claims database with sample data."""
+    claims_db = ClaimsDatabase(db_path)
+    if load_sample:
+        claims_db.load_sample_data()
+        console.console.print(f"[green]✓[/green] Claims database initialized at {db_path}")
+        stats = claims_db.get_stats()
+        console.console.print(f"  Patients: {stats['patients']}, Claims: {stats['claims']}, Lines: {stats['claim_lines']}")
+
+
 def main() -> None:
     """Main entry point for CLI."""
     parser = argparse.ArgumentParser(prog="policyagent", description="AI Agent for Healthcare Policy Analysis")
@@ -125,7 +151,8 @@ def main() -> None:
     proc.add_argument("output_path", help="Path for the output HTML report")
     proc.add_argument("--name", "-n", help="Policy name")
     proc.add_argument("--no-save", action="store_true", help="Don't save rules to database")
-    proc.add_argument("--db", default="rules.db", help="Database path")
+    proc.add_argument("--db", default="rules.db", help="Rules database path")
+    proc.add_argument("--claims-db", help="Claims database path for query execution")
     proc.add_argument("--mock", action="store_true", help="Use mock LLM for testing")
 
     srch = subparsers.add_parser("search", help="Search rules in database")
@@ -135,8 +162,11 @@ def main() -> None:
     srch.add_argument("--text", "-t", help="Text search query")
     srch.add_argument("--db", default="rules.db", help="Database path")
 
-    stats = subparsers.add_parser("stats", help="Show database statistics")
-    stats.add_argument("--db", default="rules.db", help="Database path")
+    stats_cmd = subparsers.add_parser("stats", help="Show database statistics")
+    stats_cmd.add_argument("--db", default="rules.db", help="Database path")
+
+    init_cmd = subparsers.add_parser("init-claims", help="Initialize claims database with sample data")
+    init_cmd.add_argument("--db", default="claims.db", help="Claims database path")
 
     args = parser.parse_args()
     if args.command is None:
@@ -148,11 +178,13 @@ def main() -> None:
             if not Path(args.pdf_path).exists():
                 console.print_error(f"PDF file not found: {args.pdf_path}")
                 sys.exit(1)
-            asyncio.run(run_pipeline(args.pdf_path, args.output_path, args.name, not args.no_save, args.db, args.mock))
+            asyncio.run(run_pipeline(args.pdf_path, args.output_path, args.name, not args.no_save, args.db, args.mock, args.claims_db))
         elif args.command == "search":
             asyncio.run(search_rules(args.cpt.split(",") if args.cpt else None, args.type, args.vendor, args.text, args.db))
         elif args.command == "stats":
             asyncio.run(show_stats(args.db))
+        elif args.command == "init-claims":
+            asyncio.run(init_claims_db(args.db))
     except KeyboardInterrupt:
         console.console.print("\n[yellow]Cancelled by user[/yellow]")
         sys.exit(130)
