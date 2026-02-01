@@ -23,7 +23,7 @@ def download_models(models_dir: Path | None = None) -> None:
     Args:
         models_dir: Directory to save models. Defaults to project models/ dir.
     """
-    from huggingface_hub import hf_hub_download  # noqa: PLC0415
+    from huggingface_hub import hf_hub_download
 
     if models_dir is None:
         models_dir = Path(__file__).parent.parent.parent.parent.parent / "models"
@@ -45,7 +45,8 @@ def download_models(models_dir: Path | None = None) -> None:
         logger.info("Downloading %s from %s...", filename, repo_id)
         downloaded = hf_hub_download(repo_id=repo_id, filename=filename)
         # Copy to our models directory
-        import shutil  # noqa: PLC0415
+        import shutil
+
         shutil.copy(downloaded, target)
         logger.info("Downloaded: %s", local_name)
 
@@ -71,7 +72,7 @@ class OCRTool(Tool):
     def _get_ocr(self) -> Any:
         """Lazy initialization of RapidOCR engine."""
         if self._ocr is None:
-            from rapidocr import RapidOCR  # noqa: PLC0415
+            from rapidocr import RapidOCR
 
             # RapidOCR v3+ auto-downloads models, just use defaults
             self._ocr = RapidOCR()
@@ -139,7 +140,7 @@ class OCRTool(Tool):
         # Load image
         if isinstance(image_data, bytes):
             img = Image.open(BytesIO(image_data))
-        elif isinstance(image_data, (str, Path)):
+        elif isinstance(image_data, str | Path):
             img = Image.open(image_data)
         else:
             msg = f"Invalid image data type: {type(image_data)}"
@@ -158,12 +159,14 @@ class OCRTool(Tool):
                 zip(result.boxes, result.txts, result.scores, strict=True)
             ):
                 lines.append(text)
-                boxes.append({
-                    "id": i,
-                    "text": text,
-                    "confidence": float(score),
-                    "box": box.tolist() if hasattr(box, "tolist") else list(box),
-                })
+                boxes.append(
+                    {
+                        "id": i,
+                        "text": text,
+                        "confidence": float(score),
+                        "box": box.tolist() if hasattr(box, "tolist") else list(box),
+                    }
+                )
 
         return "\n".join(lines), boxes
 
@@ -181,17 +184,21 @@ class OCRTool(Tool):
         for i, image_bytes in enumerate(images):
             result = await self.execute(image=image_bytes)
             if result.success and isinstance(result.output, dict):
-                results.append({
-                    "page": i + 1,
-                    "text": result.output.get("text", ""),
-                    "boxes": result.output.get("boxes", []),
-                })
+                results.append(
+                    {
+                        "page": i + 1,
+                        "text": result.output.get("text", ""),
+                        "boxes": result.output.get("boxes", []),
+                    }
+                )
             else:
-                results.append({
-                    "page": i + 1,
-                    "text": "",
-                    "boxes": [],
-                    "error": result.error,
-                })
+                results.append(
+                    {
+                        "page": i + 1,
+                        "text": "",
+                        "boxes": [],
+                        "error": result.error,
+                    }
+                )
 
         return results

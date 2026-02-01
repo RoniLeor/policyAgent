@@ -9,17 +9,29 @@ from typing import TYPE_CHECKING, Any
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.panel import Panel
-from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TaskID, TextColumn, TimeElapsedColumn
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TaskID,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.text import Text
 
 from policyagent.console.display import (
-    print_db_stats, print_report_summary, print_rules_extracted,
-    print_rules_table, print_search_results,
+    print_db_stats,
+    print_report_summary,
+    print_rules_extracted,
+    print_rules_table,
+    print_search_results,
 )
 
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
     from policyagent.core.models import ExtractedRule, PolicyReport, ScoredRule
 
 
@@ -35,7 +47,11 @@ class PipelineConsole:
         logging.basicConfig(
             level=level if self.verbose else "WARNING",
             format="%(message)s",
-            handlers=[RichHandler(console=self.console, rich_tracebacks=True, show_time=False, show_path=False)],
+            handlers=[
+                RichHandler(
+                    console=self.console, rich_tracebacks=True, show_time=False, show_path=False
+                )
+            ],
             force=True,
         )
 
@@ -53,20 +69,28 @@ class PipelineConsole:
     @contextmanager
     def pipeline_progress(self) -> Iterator[Progress]:
         self._progress = Progress(
-            SpinnerColumn(), TextColumn("[progress.description]{task.description}"),
-            BarColumn(bar_width=30), MofNCompleteColumn(), TimeElapsedColumn(),
-            console=self.console, expand=False,
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(bar_width=30),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            console=self.console,
+            expand=False,
         )
         with self._progress:
             yield self._progress
 
-    def create_stage_task(self, progress: Progress, description: str, total: int | None = None) -> TaskID:
+    def create_stage_task(
+        self, progress: Progress, description: str, total: int | None = None
+    ) -> TaskID:
         return progress.add_task(description, total=total)
 
     def print_stage_start(self, stage: int, name: str, icon: str = "🔄") -> None:
         self.console.print(f"\n{icon} [bold]Stage {stage}/5:[/bold] {name}")
 
-    def print_stage_complete(self, stage: int, name: str, details: str = "", icon: str = "✓") -> None:
+    def print_stage_complete(
+        self, stage: int, name: str, details: str = "", icon: str = "✓"
+    ) -> None:
         self.console.print(f"  [green]{icon}[/green] {name} [dim]{details}[/dim]")
 
     def print_rules_extracted(self, rules: list[ExtractedRule]) -> None:
@@ -74,7 +98,10 @@ class PipelineConsole:
 
     def print_sql_generation(self, rule_id: str, success: bool, retries: int) -> None:
         if success:
-            status, retry_text = "[green]✓[/green]", f" [dim](retries: {retries})[/dim]" if retries > 0 else ""
+            status, retry_text = (
+                "[green]✓[/green]",
+                f" [dim](retries: {retries})[/dim]" if retries > 0 else "",
+            )
         else:
             status, retry_text = "[red]✗[/red]", f" [dim](failed after {retries} retries)[/dim]"
         self.console.print(f"  {status} {rule_id}{retry_text}")
@@ -93,24 +120,34 @@ class PipelineConsole:
 
     def print_success(self, output_path: str) -> None:
         self.console.print()
-        self.console.print(Panel(
-            f"[green]✓ Report generated successfully![/green]\n\n[bold]Output:[/bold] {output_path}",
-            title="[green]Complete[/green]", border_style="green",
-        ))
+        self.console.print(
+            Panel(
+                f"[green]✓ Report generated successfully![/green]\n\n"
+                f"[bold]Output:[/bold] {output_path}",
+                title="[green]Complete[/green]",
+                border_style="green",
+            )
+        )
 
     def print_error(self, error: str) -> None:
         self.console.print()
-        self.console.print(Panel(f"[red]{error}[/red]", title="[red]Error[/red]", border_style="red"))
+        self.console.print(
+            Panel(f"[red]{error}[/red]", title="[red]Error[/red]", border_style="red")
+        )
 
     def print_search_results(self, query_info: dict[str, Any], rules: list[ScoredRule]) -> None:
         print_search_results(self.console, query_info, rules)
 
     def print_onboarding_complete(self, vendor: str, rule_count: int) -> None:
         self.console.print()
-        self.console.print(Panel(
-            f"[green]✓ Onboarding complete![/green]\n\n[bold]Vendor:[/bold] {vendor}\n[bold]Rules indexed:[/bold] {rule_count}",
-            title="[green]Indexed[/green]", border_style="green",
-        ))
+        self.console.print(
+            Panel(
+                f"[green]✓ Onboarding complete![/green]\n\n"
+                f"[bold]Vendor:[/bold] {vendor}\n[bold]Rules indexed:[/bold] {rule_count}",
+                title="[green]Indexed[/green]",
+                border_style="green",
+            )
+        )
 
     def print_db_stats(self, stats: dict[str, Any]) -> None:
         print_db_stats(self.console, stats)

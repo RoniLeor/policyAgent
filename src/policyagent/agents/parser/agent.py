@@ -127,11 +127,13 @@ class ParserAgent(Agent):
         ocr_results = await self._ocr_tool.process_pdf_images(images)
 
         for result in ocr_results:
-            pages.append(ParsedPage(
-                page_number=result["page"],
-                text=result.get("text", ""),
-                boxes=result.get("boxes", []),
-            ))
+            pages.append(
+                ParsedPage(
+                    page_number=result["page"],
+                    text=result.get("text", ""),
+                    boxes=result.get("boxes", []),
+                )
+            )
             text_len = len(result.get("text", ""))
             logger.debug("Parsed page %d: %d characters", result["page"], text_len)
 

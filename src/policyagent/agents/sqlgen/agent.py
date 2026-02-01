@@ -72,13 +72,22 @@ Source Text: {rule.source_text}
 
 Generate SQL and use sql_validator to validate it."""
 
-    def process_output(self, response: LLMResponse, tool_results: list[ToolResult], total_tokens: int) -> AgentResponse:
+    def process_output(
+        self, response: LLMResponse, tool_results: list[ToolResult], total_tokens: int
+    ) -> AgentResponse:
         try:
             sql = self._extract_sql_from_response(response.content)
-            return AgentResponse(success=True, output=sql, tool_results=tool_results, total_tokens=total_tokens)
+            return AgentResponse(
+                success=True, output=sql, tool_results=tool_results, total_tokens=total_tokens
+            )
         except Exception as e:
             logger.exception("Failed to extract SQL from response")
-            return AgentResponse(success=False, error=f"Failed to extract SQL: {e}", tool_results=tool_results, total_tokens=total_tokens)
+            return AgentResponse(
+                success=False,
+                error=f"Failed to extract SQL: {e}",
+                tool_results=tool_results,
+                total_tokens=total_tokens,
+            )
 
     def _extract_sql_from_response(self, content: str) -> str:
         json_str = extract_json_from_response(content)
@@ -115,5 +124,10 @@ Generate SQL and use sql_validator to validate it."""
                     break
                 logger.warning("SQL has warnings: %s", warnings)
             retry_count = attempt + 1
-        return SQLRule(rule=rule, sql=sql, sql_formatted=self._sql_tool.format_sql(sql),
-                      validation_warnings=warnings, retry_count=retry_count)
+        return SQLRule(
+            rule=rule,
+            sql=sql,
+            sql_formatted=self._sql_tool.format_sql(sql),
+            validation_warnings=warnings,
+            retry_count=retry_count,
+        )

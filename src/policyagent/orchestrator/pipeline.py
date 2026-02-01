@@ -16,8 +16,15 @@ from policyagent.config.settings import Settings
 from policyagent.core.llm import LLMClient
 from policyagent.core.models import QueryResult
 
+
 if TYPE_CHECKING:
-    from policyagent.core.models import ExtractedRule, ParsedDocument, PolicyReport, ScoredRule, SQLRule
+    from policyagent.core.models import (
+        ExtractedRule,
+        ParsedDocument,
+        PolicyReport,
+        ScoredRule,
+        SQLRule,
+    )
     from policyagent.storage.claims_db import ClaimsDatabase
 
 logger = logging.getLogger(__name__)
@@ -26,7 +33,12 @@ logger = logging.getLogger(__name__)
 class Pipeline:
     """Orchestrates the policy processing pipeline."""
 
-    def __init__(self, settings: Settings | None = None, mock: bool = False, claims_db: ClaimsDatabase | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        mock: bool = False,
+        claims_db: ClaimsDatabase | None = None,
+    ) -> None:
         if settings is None:
             settings = Settings()
         self.settings = settings
@@ -48,7 +60,9 @@ class Pipeline:
         self._claims_db = claims_db
         self._sqlgen._sql_tool.set_claims_db(claims_db)
 
-    async def run(self, pdf_path: str | Path, output_path: str | Path, policy_name: str | None = None) -> PolicyReport:
+    async def run(
+        self, pdf_path: str | Path, output_path: str | Path, policy_name: str | None = None
+    ) -> PolicyReport:
         """Run the complete pipeline on a PDF document."""
         start_time = time.time()
         pdf_path = Path(pdf_path)
@@ -93,9 +107,12 @@ class Pipeline:
         logger.info("Stage 5/5: Generating report")
         processing_time = time.time() - start_time
         report = await self._reporter.generate_report(
-            policy_name=policy_name, source_path=str(pdf_path.absolute()),
-            rules=scored_rules, output_path=output_path,
-            total_pages=document.page_count, processing_time=processing_time,
+            policy_name=policy_name,
+            source_path=str(pdf_path.absolute()),
+            rules=scored_rules,
+            output_path=output_path,
+            total_pages=document.page_count,
+            processing_time=processing_time,
         )
 
         logger.info("Pipeline complete in %.1fs", processing_time)
@@ -114,8 +131,10 @@ class Pipeline:
                 result = self._claims_db.execute_query(sql)
                 if result["success"]:
                     scored_rule.query_result = QueryResult(
-                        executed=True, violation_count=result["count"],
-                        violations=result["rows"], columns=result["columns"],
+                        executed=True,
+                        violation_count=result["count"],
+                        violations=result["rows"],
+                        columns=result["columns"],
                     )
                 else:
                     scored_rule.query_result = QueryResult(executed=True, error=result.get("error"))

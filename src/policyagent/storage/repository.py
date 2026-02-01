@@ -49,11 +49,20 @@ class RuleRepository:
                 (id, vendor, name, description, classification, source_text,
                  sql_query, sql_formatted, confidence, validation_notes, sources, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (rule.id, vendor, rule.name, rule.description, rule.classification.value,
-                 rule.source_text, sql_rule.sql, sql_rule.sql_formatted, scored_rule.confidence,
-                 json.dumps(scored_rule.validation_notes),
-                 json.dumps([s.model_dump() for s in scored_rule.sources]),
-                 datetime.now().isoformat()),
+                (
+                    rule.id,
+                    vendor,
+                    rule.name,
+                    rule.description,
+                    rule.classification.value,
+                    rule.source_text,
+                    sql_rule.sql,
+                    sql_rule.sql_formatted,
+                    scored_rule.confidence,
+                    json.dumps(scored_rule.validation_notes),
+                    json.dumps([s.model_dump() for s in scored_rule.sources]),
+                    datetime.now().isoformat(),
+                ),
             )
             conn.execute("DELETE FROM rule_cpt_codes WHERE rule_id = ?", (rule.id,))
             for cpt in rule.cpt_codes:
@@ -70,11 +79,17 @@ class RuleRepository:
         return [self.save_rule(vendor, r) for r in rules]
 
     def search(
-        self, cpt_codes: list[str] | None = None, icd10_codes: list[str] | None = None,
-        classification: RuleClassification | None = None, vendor: str | None = None,
-        text_query: str | None = None, min_confidence: float = 0.0
+        self,
+        cpt_codes: list[str] | None = None,
+        icd10_codes: list[str] | None = None,
+        classification: RuleClassification | None = None,
+        vendor: str | None = None,
+        text_query: str | None = None,
+        min_confidence: float = 0.0,
     ) -> list[ScoredRule]:
-        conditions, params, joins = ["r.confidence >= ?"], [min_confidence], []
+        conditions: list[str] = ["r.confidence >= ?"]
+        params: list[Any] = [min_confidence]
+        joins: list[str] = []
         if cpt_codes:
             joins.append("JOIN rule_cpt_codes cpt ON r.id = cpt.rule_id")
             conditions.append(f"cpt.cpt_code IN ({','.join('?' * len(cpt_codes))})")
@@ -93,7 +108,13 @@ class RuleRepository:
             joins.append("JOIN rules_fts fts ON r.id = fts.id")
             conditions.append("rules_fts MATCH ?")
             params.append(text_query)
-        query = f"SELECT DISTINCT r.* FROM rules r {' '.join(joins)} WHERE {' AND '.join(conditions)} ORDER BY r.confidence DESC"
+        # Query uses parameterized values - structure is safe
+        join_clause = " ".join(joins)
+        where_clause = " AND ".join(conditions)
+        query = (  # nosec B608
+            f"SELECT DISTINCT r.* FROM rules r {join_clause} "
+            f"WHERE {where_clause} ORDER BY r.confidence DESC"
+        )
         with self._connection() as conn:
             rows = conn.execute(query, params).fetchall()
         return [row_to_scored_rule(r, self._connection) for r in rows]

@@ -11,6 +11,7 @@ from policyagent.config.schema import CLAIMS_SCHEMA
 from policyagent.core.response import ToolResult
 from policyagent.core.tool import Tool
 
+
 if TYPE_CHECKING:
     from policyagent.storage.claims_db import ClaimsDatabase
 
@@ -50,7 +51,11 @@ class SQLTool(Tool):
             "type": "object",
             "properties": {
                 "sql": {"type": "string", "description": "SQL query to validate."},
-                "execute": {"type": "boolean", "description": "Execute query against database.", "default": False},
+                "execute": {
+                    "type": "boolean",
+                    "description": "Execute query against database.",
+                    "default": False,
+                },
             },
             "required": ["sql"],
         }
@@ -61,21 +66,37 @@ class SQLTool(Tool):
         should_execute = kwargs.get("execute", False)
 
         if not sql:
-            return ToolResult(tool_name=self.name, success=False, error="Missing required parameter: sql")
+            return ToolResult(
+                tool_name=self.name, success=False, error="Missing required parameter: sql"
+            )
 
         try:
             validation = self._validate_sql(sql)
             if should_execute and validation["is_valid"] and self._claims_db:
                 execution = self._claims_db.execute_query(sql)
                 validation["execution"] = execution
-            return ToolResult(tool_name=self.name, success=validation["is_valid"], output=validation, error=validation.get("error"))
+            return ToolResult(
+                tool_name=self.name,
+                success=validation["is_valid"],
+                output=validation,
+                error=validation.get("error"),
+            )
         except Exception as e:
             logger.exception("SQL validation failed")
-            return ToolResult(tool_name=self.name, success=False, error=f"SQL validation failed: {e}")
+            return ToolResult(
+                tool_name=self.name, success=False, error=f"SQL validation failed: {e}"
+            )
 
     def _validate_sql(self, sql: str) -> dict[str, Any]:
         """Validate SQL query syntax and schema references."""
-        result: dict[str, Any] = {"is_valid": False, "sql": sql, "tables_used": [], "columns_used": [], "warnings": [], "error": None}
+        result: dict[str, Any] = {
+            "is_valid": False,
+            "sql": sql,
+            "tables_used": [],
+            "columns_used": [],
+            "warnings": [],
+            "error": None,
+        }
         try:
             parsed = sqlglot.parse_one(sql)
         except sqlglot.errors.ParseError as e:

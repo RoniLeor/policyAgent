@@ -30,7 +30,7 @@ Validate billing rules by searching for supporting evidence.
 - 0-49%: Weak/no evidence or contradictory information
 
 ## Output Format
-Return JSON: {"confidence": 85, "sources": [{"title": "", "url": "", "snippet": "", "relevance": 0.9}], "validation_notes": ["..."]}"""
+Return JSON with confidence, sources array, and validation_notes array."""
 
 
 class ScorerAgent(Agent):
@@ -60,26 +60,43 @@ CPT Codes: {', '.join(rule.cpt_codes) or 'None'}
 
 Use web_search to find supporting evidence from CMS guidelines and payer policies."""
 
-    def process_output(self, response: LLMResponse, tool_results: list[ToolResult], total_tokens: int) -> AgentResponse:
+    def process_output(
+        self, response: LLMResponse, tool_results: list[ToolResult], total_tokens: int
+    ) -> AgentResponse:
         try:
             scoring_data = self._parse_scoring_from_response(response.content)
-            return AgentResponse(success=True, output=scoring_data, tool_results=tool_results, total_tokens=total_tokens)
+            return AgentResponse(
+                success=True,
+                output=scoring_data,
+                tool_results=tool_results,
+                total_tokens=total_tokens,
+            )
         except Exception as e:
             logger.exception("Failed to parse scoring from response")
-            return AgentResponse(success=False, error=f"Failed to parse scoring: {e}",
+            return AgentResponse(
+                success=False,
+                error=f"Failed to parse scoring: {e}",
                 output={"confidence": 50, "sources": [], "validation_notes": [str(e)]},
-                tool_results=tool_results, total_tokens=total_tokens)
+                tool_results=tool_results,
+                total_tokens=total_tokens,
+            )
 
     def _parse_scoring_from_response(self, content: str) -> dict[str, Any]:
         json_str = extract_json_from_response(content)
         try:
             data = json.loads(json_str)
-            return {"confidence": float(data.get("confidence", 50)), "sources": data.get("sources", []),
-                    "validation_notes": data.get("validation_notes", [])}
+            return {
+                "confidence": float(data.get("confidence", 50)),
+                "sources": data.get("sources", []),
+                "validation_notes": data.get("validation_notes", []),
+            }
         except json.JSONDecodeError:
             match = re.search(r"confidence[:\s]+(\d+)", content.lower())
-            return {"confidence": float(match.group(1)) if match else 50, "sources": [],
-                    "validation_notes": ["Could not parse structured response"]}
+            return {
+                "confidence": float(match.group(1)) if match else 50,
+                "sources": [],
+                "validation_notes": ["Could not parse structured response"],
+            }
 
     async def score(self, sql_rule: SQLRule) -> ScoredRule:
         logger.info("Scoring rule: %s", sql_rule.rule.id)
@@ -87,17 +104,27 @@ Use web_search to find supporting evidence from CMS guidelines and payer policie
         if response.success and isinstance(response.output, dict):
             scoring_data = cast("dict[str, Any]", response.output)
         else:
-            scoring_data = {"confidence": 50, "sources": [], "validation_notes": [f"Scoring failed: {response.error}"]}
+            scoring_data = {
+                "confidence": 50,
+                "sources": [],
+                "validation_notes": [f"Scoring failed: {response.error}"],
+            }
         sources: list[SearchSource] = []
         for src in scoring_data.get("sources", []):
             if isinstance(src, dict):
-                sources.append(SearchSource(
-                    title=str(src.get("title", "")), url=str(src.get("url", "")),
-                    snippet=str(src.get("snippet", "")), relevance=float(src.get("relevance", 0.5)),
-                ))
+                sources.append(
+                    SearchSource(
+                        title=str(src.get("title", "")),
+                        url=str(src.get("url", "")),
+                        snippet=str(src.get("snippet", "")),
+                        relevance=float(src.get("relevance", 0.5)),
+                    )
+                )
         scored_rule = ScoredRule(
-            rule=sql_rule, confidence=float(scoring_data.get("confidence", 50)),
-            sources=sources, validation_notes=scoring_data.get("validation_notes", []),
+            rule=sql_rule,
+            confidence=float(scoring_data.get("confidence", 50)),
+            sources=sources,
+            validation_notes=scoring_data.get("validation_notes", []),
         )
         logger.info("Rule %s scored: %.1f%%", sql_rule.rule.id, scored_rule.confidence)
         return scored_rule

@@ -17,6 +17,7 @@ from policyagent.storage.claims_db import ClaimsDatabase
 from policyagent.storage.repository import RuleRepository
 from policyagent.tools.html import create_default_template
 
+
 if TYPE_CHECKING:
     from policyagent.core.models import ScoredRule
 
@@ -24,8 +25,12 @@ console = PipelineConsole()
 
 
 async def run_pipeline(  # noqa: PLR0915
-    pdf_path: str, output_path: str, policy_name: str | None = None,
-    save_to_db: bool = True, db_path: str = "rules.db", mock: bool = False,
+    pdf_path: str,
+    output_path: str,
+    policy_name: str | None = None,
+    save_to_db: bool = True,
+    db_path: str = "rules.db",
+    mock: bool = False,
     claims_db_path: str | None = None,
 ) -> None:
     """Run the policy processing pipeline."""
@@ -44,7 +49,9 @@ async def run_pipeline(  # noqa: PLR0915
     if claims_db_path:
         claims_db = ClaimsDatabase(claims_db_path)
         stats = claims_db.get_stats()
-        console.console.print(f"[cyan]Claims DB:[/cyan] {stats['claims']} claims, {stats['claim_lines']} lines\n")
+        console.console.print(
+            f"[cyan]Claims DB:[/cyan] {stats['claims']} claims, {stats['claim_lines']} lines\n"
+        )
 
     pipeline = Pipeline(settings, mock=mock, claims_db=claims_db)
 
@@ -80,7 +87,9 @@ async def run_pipeline(  # noqa: PLR0915
             scored_rules.append(scored_rule)
             progress.update(task4, advance=1)
             console.print_scoring(sql_rule.rule.id, scored_rule.confidence)
-        avg_conf = sum(r.confidence for r in scored_rules) / len(scored_rules) if scored_rules else 0
+        avg_conf = (
+            sum(r.confidence for r in scored_rules) / len(scored_rules) if scored_rules else 0
+        )
         console.print_stage_complete(4, "Scored", f"avg: {avg_conf:.0f}%")
 
         # Execute queries if claims database is available
@@ -88,14 +97,19 @@ async def run_pipeline(  # noqa: PLR0915
             console.print_stage_start(5, "Executing queries", "🔎")
             scored_rules = pipeline.execute_queries(scored_rules)
             total_violations = sum(r.query_result.violation_count for r in scored_rules)
-            console.print_stage_complete(5, "Queries executed", f"{total_violations} violations found")
+            console.print_stage_complete(
+                5, "Queries executed", f"{total_violations} violations found"
+            )
 
         console.print_stage_start(6 if claims_db else 5, "Generating report", "📊")
         task5 = console.create_stage_task(progress, "Creating HTML...", total=None)
         report = await pipeline._reporter.generate_report(
-            policy_name=policy_name, source_path=str(pdf_path_obj.absolute()),
-            rules=scored_rules, output_path=output_path,
-            total_pages=document.page_count, processing_time=time.time(),
+            policy_name=policy_name,
+            source_path=str(pdf_path_obj.absolute()),
+            rules=scored_rules,
+            output_path=output_path,
+            total_pages=document.page_count,
+            processing_time=time.time(),
         )
         progress.update(task5, completed=True)
         console.print_stage_complete(6 if claims_db else 5, "Report generated")
@@ -109,8 +123,11 @@ async def run_pipeline(  # noqa: PLR0915
 
 
 async def search_rules(
-    cpt_codes: list[str] | None = None, classification: str | None = None,
-    vendor: str | None = None, text: str | None = None, db_path: str = "rules.db",
+    cpt_codes: list[str] | None = None,
+    classification: str | None = None,
+    vendor: str | None = None,
+    text: str | None = None,
+    db_path: str = "rules.db",
 ) -> None:
     """Search rules in the database."""
     repo = RuleRepository(db_path)
@@ -121,8 +138,13 @@ async def search_rules(
         except ValueError:
             console.print_error(f"Invalid classification: {classification}")
             return
-    rules = repo.search(cpt_codes=cpt_codes, classification=class_enum, vendor=vendor, text_query=text)
-    console.print_search_results({"cpt_codes": cpt_codes, "classification": classification, "vendor": vendor, "text": text}, rules)
+    rules = repo.search(
+        cpt_codes=cpt_codes, classification=class_enum, vendor=vendor, text_query=text
+    )
+    console.print_search_results(
+        {"cpt_codes": cpt_codes, "classification": classification, "vendor": vendor, "text": text},
+        rules,
+    )
 
 
 async def show_stats(db_path: str = "rules.db") -> None:
@@ -138,12 +160,17 @@ async def init_claims_db(db_path: str = "claims.db", load_sample: bool = True) -
         claims_db.load_sample_data()
         console.console.print(f"[green]✓[/green] Claims database initialized at {db_path}")
         stats = claims_db.get_stats()
-        console.console.print(f"  Patients: {stats['patients']}, Claims: {stats['claims']}, Lines: {stats['claim_lines']}")
+        console.console.print(
+            f"  Patients: {stats['patients']}, Claims: {stats['claims']}, "
+            f"Lines: {stats['claim_lines']}"
+        )
 
 
 def main() -> None:
     """Main entry point for CLI."""
-    parser = argparse.ArgumentParser(prog="policyagent", description="AI Agent for Healthcare Policy Analysis")
+    parser = argparse.ArgumentParser(
+        prog="policyagent", description="AI Agent for Healthcare Policy Analysis"
+    )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     proc = subparsers.add_parser("process", help="Process a policy PDF")
@@ -157,7 +184,9 @@ def main() -> None:
 
     srch = subparsers.add_parser("search", help="Search rules in database")
     srch.add_argument("--cpt", help="CPT codes (comma-separated)")
-    srch.add_argument("--type", choices=["mutual_exclusion", "overutilization", "service_not_covered"])
+    srch.add_argument(
+        "--type", choices=["mutual_exclusion", "overutilization", "service_not_covered"]
+    )
     srch.add_argument("--vendor", help="Vendor/policy name")
     srch.add_argument("--text", "-t", help="Text search query")
     srch.add_argument("--db", default="rules.db", help="Database path")
@@ -165,7 +194,9 @@ def main() -> None:
     stats_cmd = subparsers.add_parser("stats", help="Show database statistics")
     stats_cmd.add_argument("--db", default="rules.db", help="Database path")
 
-    init_cmd = subparsers.add_parser("init-claims", help="Initialize claims database with sample data")
+    init_cmd = subparsers.add_parser(
+        "init-claims", help="Initialize claims database with sample data"
+    )
     init_cmd.add_argument("--db", default="claims.db", help="Claims database path")
 
     args = parser.parse_args()
@@ -178,9 +209,27 @@ def main() -> None:
             if not Path(args.pdf_path).exists():
                 console.print_error(f"PDF file not found: {args.pdf_path}")
                 sys.exit(1)
-            asyncio.run(run_pipeline(args.pdf_path, args.output_path, args.name, not args.no_save, args.db, args.mock, args.claims_db))
+            asyncio.run(
+                run_pipeline(
+                    args.pdf_path,
+                    args.output_path,
+                    args.name,
+                    not args.no_save,
+                    args.db,
+                    args.mock,
+                    args.claims_db,
+                )
+            )
         elif args.command == "search":
-            asyncio.run(search_rules(args.cpt.split(",") if args.cpt else None, args.type, args.vendor, args.text, args.db))
+            asyncio.run(
+                search_rules(
+                    args.cpt.split(",") if args.cpt else None,
+                    args.type,
+                    args.vendor,
+                    args.text,
+                    args.db,
+                )
+            )
         elif args.command == "stats":
             asyncio.run(show_stats(args.db))
         elif args.command == "init-claims":

@@ -7,11 +7,12 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from policyagent.core.types import RuleClassification  # noqa: TC001 - Pydantic needs at runtime
+from policyagent.core.types import RuleClassification  # - Pydantic needs at runtime
 
 
 class ParsedPage(BaseModel):
     """Parsed content from a single PDF page."""
+
     page_number: int
     text: str
     boxes: list[dict[str, Any]] = Field(default_factory=list)
@@ -19,6 +20,7 @@ class ParsedPage(BaseModel):
 
 class ParsedDocument(BaseModel):
     """Parsed content from a PDF document."""
+
     path: str
     page_count: int
     pages: list[ParsedPage] = Field(default_factory=list)
@@ -30,6 +32,7 @@ class ParsedDocument(BaseModel):
 
 class ExtractedRule(BaseModel):
     """A billing rule extracted from a policy document."""
+
     id: str
     name: str
     description: str
@@ -43,6 +46,7 @@ class ExtractedRule(BaseModel):
 
 class SQLRule(BaseModel):
     """A rule with its SQL implementation."""
+
     rule: ExtractedRule
     sql: str
     sql_formatted: str
@@ -52,6 +56,7 @@ class SQLRule(BaseModel):
 
 class SearchSource(BaseModel):
     """A web search source for rule validation."""
+
     title: str
     url: str
     snippet: str
@@ -60,6 +65,7 @@ class SearchSource(BaseModel):
 
 class QueryResult(BaseModel):
     """Result of executing a rule's SQL query."""
+
     executed: bool = False
     violation_count: int = 0
     violations: list[dict[str, Any]] = Field(default_factory=list)
@@ -69,6 +75,7 @@ class QueryResult(BaseModel):
 
 class ScoredRule(BaseModel):
     """A rule with confidence score and sources."""
+
     rule: SQLRule
     confidence: float = Field(ge=0.0, le=100.0)
     sources: list[SearchSource] = Field(default_factory=list)
@@ -78,6 +85,7 @@ class ScoredRule(BaseModel):
 
 class PolicyReport(BaseModel):
     """Complete report for a policy document."""
+
     policy_name: str
     source_path: str
     generated_at: datetime = Field(default_factory=datetime.now)

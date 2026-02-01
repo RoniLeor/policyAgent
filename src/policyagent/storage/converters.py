@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from policyagent.core.models import ExtractedRule, ScoredRule, SearchSource, SQLRule
 from policyagent.core.types import RuleClassification
 
 
-def row_to_scored_rule(
-    row: sqlite3.Row, get_connection: Any
-) -> ScoredRule:
+def row_to_scored_rule(row: sqlite3.Row, get_connection: Any) -> ScoredRule:
     """Convert database row to ScoredRule object."""
     with get_connection() as conn:
         cpt_rows = conn.execute(

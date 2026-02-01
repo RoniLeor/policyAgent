@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 INIT_SCHEMA = """
 -- Main rules table
 CREATE TABLE IF NOT EXISTS rules (

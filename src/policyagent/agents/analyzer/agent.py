@@ -55,15 +55,27 @@ class AnalyzerAgent(Agent):
 
     def format_input(self, input_data: Any) -> str:
         text = input_data.full_text if isinstance(input_data, ParsedDocument) else str(input_data)
-        return f"Analyze the following policy document text and extract all billing rules.\n\nDocument Text:\n---\n{text}\n---\n\nReturn your analysis as a JSON array."
+        return (
+            f"Analyze the following policy document text and extract all billing rules.\n\n"
+            f"Document Text:\n---\n{text}\n---\n\nReturn your analysis as a JSON array."
+        )
 
-    def process_output(self, response: LLMResponse, tool_results: list[ToolResult], total_tokens: int) -> AgentResponse:
+    def process_output(
+        self, response: LLMResponse, tool_results: list[ToolResult], total_tokens: int
+    ) -> AgentResponse:
         try:
             rules = self._parse_rules_from_response(response.content)
-            return AgentResponse(success=True, output=rules, tool_results=tool_results, total_tokens=total_tokens)
+            return AgentResponse(
+                success=True, output=rules, tool_results=tool_results, total_tokens=total_tokens
+            )
         except Exception as e:
             logger.exception("Failed to parse rules from response")
-            return AgentResponse(success=False, error=f"Failed to parse rules: {e}", tool_results=tool_results, total_tokens=total_tokens)
+            return AgentResponse(
+                success=False,
+                error=f"Failed to parse rules: {e}",
+                tool_results=tool_results,
+                total_tokens=total_tokens,
+            )
 
     def _parse_rules_from_response(self, content: str) -> list[ExtractedRule]:
         json_str = extract_json_from_response(content)
@@ -75,13 +87,19 @@ class AnalyzerAgent(Agent):
                 classification = RuleClassification(item.get("classification", "mutual_exclusion"))
             except ValueError:
                 classification = RuleClassification.MUTUAL_EXCLUSION
-            rules.append(ExtractedRule(
-                id=item.get("id", f"RULE-{i + 1:03d}"), name=item.get("name", f"Rule {i + 1}"),
-                description=item.get("description", ""), classification=classification,
-                source_text=item.get("source_text", ""), cpt_codes=item.get("cpt_codes", []),
-                icd10_codes=item.get("icd10_codes", []), modifiers=item.get("modifiers", []),
-                conditions=item.get("conditions", []),
-            ))
+            rules.append(
+                ExtractedRule(
+                    id=item.get("id", f"RULE-{i + 1:03d}"),
+                    name=item.get("name", f"Rule {i + 1}"),
+                    description=item.get("description", ""),
+                    classification=classification,
+                    source_text=item.get("source_text", ""),
+                    cpt_codes=item.get("cpt_codes", []),
+                    icd10_codes=item.get("icd10_codes", []),
+                    modifiers=item.get("modifiers", []),
+                    conditions=item.get("conditions", []),
+                )
+            )
         return rules
 
     async def analyze(self, document: ParsedDocument) -> list[ExtractedRule]:

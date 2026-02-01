@@ -1,6 +1,6 @@
 """Default HTML report template."""
 
-REPORT_TEMPLATE = '''<!DOCTYPE html>
+REPORT_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -91,4 +91,4 @@ REPORT_TEMPLATE = '''<!DOCTYPE html>
     </div>
     {% endfor %}
 </body>
-</html>'''
+</html>"""

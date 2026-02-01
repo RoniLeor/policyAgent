@@ -11,6 +11,7 @@ from rich.tree import Tree
 
 if TYPE_CHECKING:
     from rich.console import Console
+
     from policyagent.core.models import ExtractedRule, PolicyReport, ScoredRule
 
 
@@ -25,7 +26,9 @@ def print_rules_extracted(console: Console, rules: list[ExtractedRule]) -> None:
         by_class.setdefault(key, []).append(rule)
     tree = Tree("[bold]Extracted Rules[/bold]")
     for classification, class_rules in by_class.items():
-        branch = tree.add(f"[cyan]{classification.replace('_', ' ').title()}[/cyan] ({len(class_rules)})")
+        branch = tree.add(
+            f"[cyan]{classification.replace('_', ' ').title()}[/cyan] ({len(class_rules)})"
+        )
         for rule in class_rules[:3]:
             branch.add(f"[dim]{rule.id}[/dim] {rule.name}")
         if len(class_rules) > 3:
@@ -67,7 +70,9 @@ def print_rules_table(console: Console, rules: list[ScoredRule]) -> None:
     table.add_column("Conf", justify="right", width=6)
     for rule in rules:
         r = rule.rule.rule
-        conf_color = "green" if rule.confidence >= 80 else "yellow" if rule.confidence >= 50 else "red"
+        conf_color = (
+            "green" if rule.confidence >= 80 else "yellow" if rule.confidence >= 50 else "red"
+        )
         cpt_str = ", ".join(r.cpt_codes[:3]) + ("..." if len(r.cpt_codes) > 3 else "")
         table.add_row(
             r.id,
@@ -79,7 +84,9 @@ def print_rules_table(console: Console, rules: list[ScoredRule]) -> None:
     console.print(table)
 
 
-def print_search_results(console: Console, query_info: dict[str, Any], rules: list[ScoredRule]) -> None:
+def print_search_results(
+    console: Console, query_info: dict[str, Any], rules: list[ScoredRule]
+) -> None:
     """Print search results."""
     query_parts = []
     if query_info.get("cpt_codes"):
@@ -91,10 +98,13 @@ def print_search_results(console: Console, query_info: dict[str, Any], rules: li
     if query_info.get("text"):
         query_parts.append(f"Text: {query_info['text']}")
     query_str = " | ".join(query_parts) if query_parts else "All rules"
-    console.print(Panel(
-        f"[bold]Query:[/bold] {query_str}\n[bold]Results:[/bold] {len(rules)} rules found",
-        title="Search Results", border_style="blue",
-    ))
+    console.print(
+        Panel(
+            f"[bold]Query:[/bold] {query_str}\n[bold]Results:[/bold] {len(rules)} rules found",
+            title="Search Results",
+            border_style="blue",
+        )
+    )
     if rules:
         print_rules_table(console, rules)
 

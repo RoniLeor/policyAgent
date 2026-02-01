@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -104,26 +105,46 @@ class ClaimsDatabase:
                 return
 
             # Sample patients
-            conn.executemany("INSERT INTO patient VALUES (?, ?, ?)", [
-                ("P001", "1985-03-15", "M"), ("P002", "1990-07-22", "F"),
-                ("P003", "1978-11-30", "M"), ("P004", "2000-01-10", "F"),
-            ])
+            conn.executemany(
+                "INSERT INTO patient VALUES (?, ?, ?)",
+                [
+                    ("P001", "1985-03-15", "M"),
+                    ("P002", "1990-07-22", "F"),
+                    ("P003", "1978-11-30", "M"),
+                    ("P004", "2000-01-10", "F"),
+                ],
+            )
 
             # Sample providers
-            conn.executemany("INSERT INTO provider VALUES (?, ?)", [
-                ("1234567890", "12-3456789"), ("0987654321", "98-7654321"),
-            ])
+            conn.executemany(
+                "INSERT INTO provider VALUES (?, ?)",
+                [
+                    ("1234567890", "12-3456789"),
+                    ("0987654321", "98-7654321"),
+                ],
+            )
 
             # Sample claims with violations
-            conn.executemany("INSERT INTO claim VALUES (?, ?, ?)", [
-                ("CLM001", "P001", "1234567890"), ("CLM002", "P002", "1234567890"),
-                ("CLM003", "P003", "0987654321"), ("CLM004", "P004", "0987654321"),
-                ("CLM005", "P001", "1234567890"), ("CLM006", "P002", "0987654321"),
-            ])
+            conn.executemany(
+                "INSERT INTO claim VALUES (?, ?, ?)",
+                [
+                    ("CLM001", "P001", "1234567890"),
+                    ("CLM002", "P002", "1234567890"),
+                    ("CLM003", "P003", "0987654321"),
+                    ("CLM004", "P004", "0987654321"),
+                    ("CLM005", "P001", "1234567890"),
+                    ("CLM006", "P002", "0987654321"),
+                ],
+            )
 
             # Claim lines - some violate rules
+            insert_sql = (
+                "INSERT INTO claim_line "
+                "(claim_id, dos, pos, icd10, cpt_code, units, amount, modifiers) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            )
             conn.executemany(
-                "INSERT INTO claim_line (claim_id, dos, pos, icd10, cpt_code, units, amount, modifiers) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                insert_sql,
                 [
                     # CLM001: 69990 without required primary procedure (violation)
                     ("CLM001", "2024-01-15", "11", "H35.30", "69990", 1, 500.00, None),
@@ -138,7 +159,8 @@ class ClaimsDatabase:
                     ("CLM005", "2024-01-19", "11", "L90.5", "15780", 1, 1500.00, None),
                     # CLM006: Normal procedure (OK)
                     ("CLM006", "2024-01-20", "11", "J06.9", "99213", 1, 150.00, None),
-                ])
+                ],
+            )
 
     def get_stats(self) -> dict[str, int]:
         """Get database statistics."""

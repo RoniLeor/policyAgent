@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from policyagent.core.response import ToolCall  # noqa: TC001 - Pydantic needs at runtime
+from policyagent.core.response import ToolCall  # - Pydantic needs at runtime
 from policyagent.core.types import MessageRole
 
 
